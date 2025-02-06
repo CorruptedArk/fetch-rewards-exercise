@@ -14,14 +14,14 @@ class JSONDownloadRepository {
         private const val ID_KEY = "id"
         private const val LIST_ID_KEY = "listId"
         private const val NAME_KEY = "name"
+        private const val JSON_URL = "https://fetch-hiring.s3.amazonaws.com/hiring.json"
     }
 
 
     fun startDownload(context: Context, successListener: (List<FetchRewardsItem>) -> Unit) {
         val requestQueue = Volley.newRequestQueue(context)
 
-        val url = "https://fetch-hiring.s3.amazonaws.com/hiring.json"
-        val jsonArrayRequest = JsonArrayRequest(Request.Method.GET, url, null,
+        val jsonArrayRequest = JsonArrayRequest(Request.Method.GET, JSON_URL, null,
             { response ->
                 val rewardsItemList = parseJSONArray(response)
                 val sortedFilteredList = rewardsItemList
