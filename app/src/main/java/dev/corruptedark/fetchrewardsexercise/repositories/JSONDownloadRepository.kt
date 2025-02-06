@@ -2,13 +2,10 @@ package dev.corruptedark.fetchrewardsexercise.repositories
 
 import android.content.Context
 import android.util.Log
-import androidx.compose.ui.util.fastFilter
 import com.android.volley.Request
-import com.android.volley.Response
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.Volley
 import dev.corruptedark.fetchrewardsexercise.data.FetchRewardsItem
-import kotlinx.coroutines.flow.MutableStateFlow
 import org.json.JSONArray
 
 class JSONDownloadRepository {
@@ -19,11 +16,8 @@ class JSONDownloadRepository {
         private const val NAME_KEY = "name"
     }
 
-    val fetchRewardsItemListStateFlow: MutableStateFlow<List<FetchRewardsItem>> = MutableStateFlow(
-        emptyList()
-    )
 
-    fun startDownload(context: Context) {
+    fun startDownload(context: Context, successListener: (List<FetchRewardsItem>) -> Unit) {
         val requestQueue = Volley.newRequestQueue(context)
 
         val url = "https://fetch-hiring.s3.amazonaws.com/hiring.json"
@@ -31,9 +25,10 @@ class JSONDownloadRepository {
             { response ->
                 val rewardsItemList = parseJSONArray(response)
                 val sortedFilteredList = rewardsItemList
-                    .filter { item -> !item.name.isNullOrEmpty() }.sortedWith(compareBy({it.listId}, {it.name}))
+                    .filter { item -> !(item.name.isNullOrEmpty() or item.name.equals("null")) }
+                    .sortedWith(compareBy({ it.listId }, { it.name }))
 
-                fetchRewardsItemListStateFlow.tryEmit(sortedFilteredList)
+                successListener.invoke(sortedFilteredList)
             },
             { error ->
                 error.message?.let { Log.d(JSONDownloadRepository::class.java.name, it) }
@@ -46,7 +41,7 @@ class JSONDownloadRepository {
     private fun parseJSONArray(jsonArray: JSONArray): List<FetchRewardsItem> {
         val rewardItemList = mutableListOf<FetchRewardsItem>()
 
-        for (outerIndex in 0..< jsonArray.length()) {
+        for (outerIndex in 0..<jsonArray.length()) {
             val jsonObject = jsonArray.optJSONObject(outerIndex)
 
             jsonObject?.let { nonNullJsonObject ->
